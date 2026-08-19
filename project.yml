@@ -20,7 +20,7 @@ targets:
       - path: Kinoteatr
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.grove.street.kinoteatr
+        PRODUCT_BUNDLE_IDENTIFIER: app.hare5681.lyra4838
         INFOPLIST_FILE: Kinoteatr/Support/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: true

@@ -33,15 +33,43 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      - name: Package IPA
+      - name: Package unsigned IPA
         run: |
           APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 | head -1)
           mkdir Payload
           cp -r "$APP_PATH" Payload/
-          zip -qr Kinoteatr.ipa Payload
+          zip -qr Kinoteatr-unsigned.ipa Payload
           rm -rf Payload
+
+      - name: Install zsign
+        run: |
+          curl -sSL -o zsign.zip https://github.com/zhlynn/zsign/releases/download/v1.1.1/zsign-macos-arm64.tar.gz
+          tar -xzf zsign.zip
+          sudo mv zsign /usr/local/bin/zsign
+
+      - name: Sign IPA
+        if: ${{ secrets.APPLE_CERT_P12 != '' }}
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_PROFILE: ${{ secrets.APPLE_PROFILE }}
+        run: |
+          echo "$APPLE_CERT_P12" | base64 -d > cert.p12
+          echo "$APPLE_PROFILE" | base64 -d > dev.mobileprovision
+          zsign -k cert.p12 -p "$APPLE_CERT_PASSWORD" -m dev.mobileprovision \
+            -b "app.hare5681.lyra4838" \
+            -o Kinoteatr-signed.ipa Kinoteatr-unsigned.ipa
+          rm -f cert.p12 dev.mobileprovision
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Kinoteatr.ipa
-          path: Kinoteatr.ipa
+          name: Kinoteatr-unsigned.ipa
+          path: Kinoteatr-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ secrets.APPLE_CERT_P12 != '' }}
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+        with:
+          name: Kinoteatr-signed.ipa
+          path: Kinoteatr-signed.ipa
