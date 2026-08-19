@@ -3,3 +3,9 @@ DerivedData/
 *.xcodeproj/
 xcuserdata/
 .DS_Store
+signing/
+dist/
+*.p12
+*.mobileprovision
+*.pem
+
