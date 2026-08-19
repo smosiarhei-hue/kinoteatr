@@ -48,7 +48,6 @@ jobs:
           sudo mv zsign /usr/local/bin/zsign
 
       - name: Sign IPA
-        if: ${{ secrets.APPLE_CERT_P12 != '' }}
         env:
           APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
           APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
@@ -67,7 +66,6 @@ jobs:
           path: Kinoteatr-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
-        if: ${{ secrets.APPLE_CERT_P12 != '' }}
         env:
           APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
         with:
