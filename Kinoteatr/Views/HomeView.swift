@@ -47,7 +47,7 @@ struct HomeView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 24)
             }
-            .navigationTitle("Кинотеатр")
+            .navigationTitle("Fluxo")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
