@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PlayerView: View {
     let movie: Movie
+    var magnet: MagnetResult?
 
     @EnvironmentObject private var playerService: TorrentPlayerService
     @Environment(\.dismiss) private var dismiss
@@ -28,7 +29,7 @@ struct PlayerView: View {
             .overlay(alignment: .top) { overlayHeader }
             .task {
                 await playerService.stop()
-                await playerService.play(movie: movie)
+                await playerService.play(movie: movie, magnet: magnet)
             }
             .onDisappear {
                 Task { await playerService.stop() }
@@ -75,7 +76,7 @@ struct PlayerView: View {
             Button("Повторить") {
                 Task {
                     await playerService.stop()
-                    await playerService.play(movie: movie)
+                    await playerService.play(movie: movie, magnet: magnet)
                 }
             }
             .buttonStyle(.borderedProminent)

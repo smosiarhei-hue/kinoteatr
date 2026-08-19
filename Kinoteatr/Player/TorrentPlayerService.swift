@@ -22,13 +22,23 @@ final class TorrentPlayerService: ObservableObject {
     }
 
     func play(movie: Movie) async {
+        await play(movie: movie, magnet: nil)
+    }
+
+    func play(movie: Movie, magnet: MagnetResult?) async {
         errorMessage = nil
         state = .searchingMagnet
 
-        let candidates = await search.search(movie: movie)
-        guard let candidate = candidates.first else {
-            fail("Не найдено magnet-ссылок для «\(movie.title)»")
-            return
+        let candidate: MagnetResult
+        if let magnet {
+            candidate = magnet
+        } else {
+            let candidates = await search.search(movie: movie)
+            guard let first = candidates.first else {
+                fail("Не найдено magnet-ссылок для «\(movie.title)»")
+                return
+            }
+            candidate = first
         }
 
         state = .resolvingMetadata

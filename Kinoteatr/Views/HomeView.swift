@@ -1,8 +1,15 @@
 import SwiftUI
 
+struct PlayRequest: Identifiable {
+    let id = UUID()
+    let movie: Movie
+    let magnet: MagnetResult
+}
+
 struct HomeView: View {
     @StateObject private var viewModel = MovieCatalogViewModel()
-    @State private var movieToPlay: Movie?
+    @State private var pickMovie: Movie?
+    @State private var playRequest: PlayRequest?
     @State private var showFilters = false
 
     private let columns = [
@@ -31,7 +38,7 @@ struct HomeView: View {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(viewModel.movies) { movie in
                                 MovieCardView(movie: movie) {
-                                    movieToPlay = movie
+                                    pickMovie = movie
                                 }
                                 .task {
                                     await viewModel.loadMoreIfNeeded(current: movie)
@@ -72,8 +79,13 @@ struct HomeView: View {
                 FilterSheetView(viewModel: viewModel)
                     .presentationDetents([.large, .medium])
             }
-            .sheet(item: $movieToPlay) { movie in
-                PlayerView(movie: movie)
+            .sheet(item: $pickMovie) { movie in
+                TorrentPickerView(movie: movie) { magnet in
+                    playRequest = PlayRequest(movie: movie, magnet: magnet)
+                }
+            }
+            .sheet(item: $playRequest) { request in
+                PlayerView(movie: request.movie, magnet: request.magnet)
                     .preferredColorScheme(.dark)
             }
             .task {

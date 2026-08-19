@@ -1,6 +1,7 @@
 import Foundation
 
-struct MagnetResult {
+struct MagnetResult: Identifiable {
+    var id: String { magnet }
     let magnet: String
     let name: String
     let sizeBytes: Int64
