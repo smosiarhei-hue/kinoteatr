@@ -10,8 +10,10 @@ final class StubTorrentEngine: TorrentEngine {
         cancelled = false
         guard magnet.hasPrefix("magnet:") else { throw TorrentEngineError.magnetInvalid }
 
-        let fileURL = Bundle.main.url(forResource: "sample", withExtension: "mp4")
-            ?? (await DemoVideoFactory.ensureSampleVideo())
+        var fileURL = Bundle.main.url(forResource: "sample", withExtension: "mp4")
+        if fileURL == nil {
+            fileURL = await DemoVideoFactory.ensureSampleVideo()
+        }
         guard let fileURL, FileManager.default.fileExists(atPath: fileURL.path) else {
             throw TorrentEngineError.backendNotLinked
         }
