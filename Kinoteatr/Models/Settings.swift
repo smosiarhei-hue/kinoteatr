@@ -31,6 +31,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("app_theme") private(set) var themeRaw: String = AppTheme.dark.rawValue
     @AppStorage("default_quality") var defaultQuality: String = "1080p"
     @AppStorage("download_folder") var downloadFolder: String = "Kinoteatr"
+    @AppStorage("prefer_russian_audio") var preferRussianAudio: Bool = true
 
     var theme: AppTheme {
         AppTheme(rawValue: themeRaw) ?? .dark

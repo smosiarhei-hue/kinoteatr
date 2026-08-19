@@ -23,6 +23,11 @@ struct SettingsView: View {
                     Text("Без Jackett работает демо-провайдер magnet-ссылок.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    Toggle("Предпочитать русскую озвучку", isOn: $settings.preferRussianAudio)
+                    Text("Раздачи с дубляжом/русской дорожкой идут первыми.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Оформление") {

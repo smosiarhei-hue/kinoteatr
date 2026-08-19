@@ -5,6 +5,16 @@ struct MagnetResult {
     let name: String
     let sizeBytes: Int64
     let seeds: Int
+
+    var hasRussianAudio: Bool {
+        let n = name.lowercased()
+        let markers = [
+            "дубляж", "дублирован", "профессиональн", "многоголосый",
+            "многоголос", "русская озвучка", "русская дорожка", "русски",
+            "russian", "rus dub", "line", "лицензия", "voice", " озв",
+        ]
+        return markers.contains { n.contains($0) }
+    }
 }
 
 protocol MagnetProvider {
@@ -60,7 +70,6 @@ struct JackettMagnetProvider: MagnetProvider {
                                 sizeBytes: row.Size ?? 0,
                                 seeds: row.Seeders ?? 0)
         }
-        .sorted { $0.seeds > $1.seeds }
     }
 }
 
@@ -88,9 +97,22 @@ actor MagnetSearchService {
         for provider in providers {
             if let results = try? await provider.search(movie: movie.title, year: movie.releaseYear),
                !results.isEmpty {
-                return results
+                return Self.rank(results)
             }
         }
         return []
+    }
+
+    static func rank(_ results: [MagnetResult]) -> [MagnetResult] {
+        let prefer = AppSettings.shared.preferRussianAudio
+        guard prefer else {
+            return results.sorted { $0.seeds > $1.seeds }
+        }
+        return results.sorted {
+            if $0.hasRussianAudio != $1.hasRussianAudio {
+                return $0.hasRussianAudio
+            }
+            return $0.seeds > $1.seeds
+        }
     }
 }
