@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct Genre: Codable, Hashable {
+struct Genre: Codable, Hashable, Identifiable {
     let id: Int
     let name: String
 }
