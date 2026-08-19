@@ -12,10 +12,14 @@ struct HomeView: View {
     @State private var playRequest: PlayRequest?
     @State private var showFilters = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    private var columns: [GridItem] {
+        switch sizeClass {
+        case .compact: return [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+        default:    return Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        }
+    }
 
     var body: some View {
         NavigationStack {

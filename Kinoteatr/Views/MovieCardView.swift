@@ -40,7 +40,7 @@ struct MovieCardView: View {
                     .overlay(ProgressView())
             }
         }
-        .frame(height: 240)
+        .aspectRatio(2/3, contentMode: .fit)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(alignment: .topTrailing) {

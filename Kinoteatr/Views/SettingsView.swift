@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @State private var didReload = false
 
     var body: some View {
         NavigationStack {

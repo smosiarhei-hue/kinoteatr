@@ -4,12 +4,16 @@ enum TMDBError: LocalizedError {
     case noAPIKey
     case badResponse
     case invalidURL
+    case network
+    case invalidKey
 
     var errorDescription: String? {
         switch self {
-        case .noAPIKey: return "Не указан TMDB API ключ. Добавь его в настройках."
+        case .noAPIKey: return "Не указан TMDB API ключ. Добавьте его в настройках."
         case .badResponse: return "Некорректный ответ от TMDB."
         case .invalidURL: return "Некорректный URL запроса."
+        case .network: return "Не удалось подключиться к серверу TMDB. Проверьте интернет или включите VPN."
+        case .invalidKey: return "TMDB отклонил API-ключ (401). Проверьте ключ в настройках."
         }
     }
 }
@@ -37,18 +41,21 @@ enum DiscoverSort: String, CaseIterable, Identifiable {
 actor TMDBAPI {
     static let shared = TMDBAPI()
 
-    private let baseURL = URL(string: "https://api.themoviedb.org/3")!
+    private let hosts = [
+        URL(string: "https://api.themoviedb.org/3")!,
+        URL(string: "https://api.tmdb.org/3")!,
+    ]
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
     }()
 
-    private func request(_ path: String, items: [URLQueryItem]) throws -> URLRequest {
+    private func request(host: URL, path: String, items: [URLQueryItem]) throws -> URLRequest {
         let key = AppSettings.shared.apiKey
         guard !key.isEmpty else { throw TMDBError.noAPIKey }
 
-        var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        var comps = URLComponents(url: host.appendingPathComponent(path), resolvingAgainstBaseURL: false)
         let lang = Locale.current.identifier.hasPrefix("ru") ? "ru-RU" : "en-US"
         var query = items
         query.removeAll { ["api_key", "language"].contains($0.name) }
@@ -60,12 +67,25 @@ actor TMDBAPI {
         return URLRequest(url: url)
     }
 
-    private func fetchPage(path: String, items: [URLQueryItem]) async throws -> Page<Movie> {
-        let (data, response) = try await URLSession.shared.data(for: try request(path, items: items))
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw TMDBError.badResponse
+    private func fetchData<T>(path: String, items: [URLQueryItem], decode: (Data) throws -> T) async throws -> T {
+        for host in hosts {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: try request(host: host, path: path, items: items))
+                guard let http = response as? HTTPURLResponse else { throw TMDBError.badResponse }
+                guard (200..<300).contains(http.statusCode) else {
+                    throw http.statusCode == 401 ? TMDBError.invalidKey : TMDBError.badResponse
+                }
+                return try decode(data)
+            } catch let error as URLError {
+                if host == hosts.last { throw TMDBError.network }
+                continue
+            }
         }
-        return try decoder.decode(Page<Movie>.self, from: data)
+        throw TMDBError.network
+    }
+
+    private func fetchPage(path: String, items: [URLQueryItem]) async throws -> Page<Movie> {
+        try await fetchData(path: path, items: items) { try decoder.decode(Page<Movie>.self, from: $0) }
     }
 
     func discoverMovies(page: Int = 1, sort: DiscoverSort, genreID: Int?, year: Int?, minRating: Double) async throws -> Page<Movie> {
@@ -89,12 +109,8 @@ actor TMDBAPI {
     }
 
     func fetchGenres() async throws -> [Genre] {
-        let (data, response) = try await URLSession.shared.data(for: try request("genre/movie/list", items: []))
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw TMDBError.badResponse
-        }
         struct Wrapper: Codable { let genres: [Genre] }
-        return try decoder.decode(Wrapper.self, from: data).genres
+        return try await fetchData(path: "genre/movie/list", items: []) { try decoder.decode(Wrapper.self, from: $0).genres }
     }
 
     func searchMovies(query: String, page: Int = 1) async throws -> Page<Movie> {
