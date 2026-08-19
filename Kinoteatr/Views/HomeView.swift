@@ -16,8 +16,8 @@ struct HomeView: View {
 
     private var columns: [GridItem] {
         switch sizeClass {
-        case .compact: return [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-        default:    return Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        case .compact: return [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 12)]
+        default:    return [GridItem(.adaptive(minimum: 180, maximum: 260), spacing: 16)]
         }
     }
 
