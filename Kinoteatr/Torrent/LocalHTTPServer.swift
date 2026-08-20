@@ -60,7 +60,7 @@ final class LocalHTTPServer {
 
     private static func parseRangeStart(_ header: String, totalHint: Int64?) -> Int64? {
         guard let eq = header.range(of: "=") else { return nil }
-        let value = header[header.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+        let value = header[eq.upperBound...].trimmingCharacters(in: .whitespaces)
         let first = value.split(separator: "-").first.map(String.init) ?? ""
         return Int64(first)
     }
