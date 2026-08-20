@@ -2,21 +2,21 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
-    @State private var didReload = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("TMDB (каталог фильмов)") {
-                    TextField("API ключ v3", text: $settings.apiKey)
+                Section("TMDB — каталог фильмов") {
+                    SecureField("API key v3 или Read Access Token v4", text: $settings.apiKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                    Text("Бесплатный ключ на themoviedb.org → Settings → API")
+                        .textContentType(.password)
+                    Text("Поддерживаются оба формата TMDB. Ключ хранится локально и не показывается в интерфейсе полностью.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                Section("Торренты (Jackett, опционально)") {
+                Section("Торренты — Jackett, опционально") {
                     TextField("http://192.168.1.10:9117/api/v2.0/indexers/all/results?apikey=…", text: $settings.jackettURL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -26,7 +26,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
 
                     Toggle("Предпочитать русскую озвучку", isOn: $settings.preferRussianAudio)
-                    Text("Раздачи с дубляжом/русской дорожкой идут первыми.")
+                    Text("Раздачи с дубляжом или русской дорожкой идут первыми.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -43,6 +43,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Настройки")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

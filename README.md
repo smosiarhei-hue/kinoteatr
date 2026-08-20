@@ -10,7 +10,7 @@ iOS-приложение на SwiftUI: каталог фильмов (TMDB), т�
 - Плеер: статистика пиров/скорости/буфера, пауза/стоп.
 
 ## Настройка
-1. TMDB API ключ: themoviedb.org → Settings → API (v3 auth key) → Настройки приложения.
+1. TMDB API ключ: themoviedb.org → Settings → API → Настройки приложения. Поддерживается v3 API key и v4 Read Access Token.
 2. Реальные торренты: поднять Jackett и вставить URL в Настройки (`.../api/v2.0/indexers/all/results?apikey=...`). Без Jackett работает Demo-провайдер (демо-magnet'ы).
 3. Проект: `xcodegen generate` (или открыть `Kinoteatr/*.swift` вручную в Xcode: File → New → Project → создать таргет и добавить папку `Kinoteatr/`).
 
@@ -35,3 +35,8 @@ project.yml       — манифест XcodeGen
 ## Известные ограничения
 - iOS не пускает полноценный BitTorrent-клиент без замены движка; `TorrentEngine` — точка расширения.
 - App Store может отклонить торрент-фичи; для личного использования (side-load) подходит.
+
+## Установка через GBox
+- После изменений нужно пересобрать IPA через GitHub Actions или Xcode на macOS: исходный dist/*.ipa уже собран из старого кода.
+- Иконка хранится в полном наборе iOS-размеров в Kinoteatr/Support/Assets.xcassets/AppIcon.appiconset, поэтому при новой сборке GBox должен показывать корректную иконку.
+

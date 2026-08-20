@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct KinoteatrApp: App {
-    @StateObject private var settings = AppSettings()
+    @StateObject private var settings = AppSettings.shared
     @StateObject private var player = TorrentPlayerService()
 
     var body: some Scene {
@@ -14,3 +14,4 @@ struct KinoteatrApp: App {
         }
     }
 }
+

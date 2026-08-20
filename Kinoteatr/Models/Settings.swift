@@ -26,7 +26,7 @@ enum AppTheme: String, Codable, Identifiable, CaseIterable {
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
-    @AppStorage("tmdb_api_key") var apiKey: String = ""
+    @AppStorage("tmdb_api_key") var apiKey: String = "30ca2adcda3a3d78ecdf2e12f5117231"
     @AppStorage("jackett_url") var jackettURL: String = ""
     @AppStorage("app_theme") private(set) var themeRaw: String = AppTheme.dark.rawValue
     @AppStorage("default_quality") var defaultQuality: String = "1080p"

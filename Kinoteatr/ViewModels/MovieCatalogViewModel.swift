@@ -84,7 +84,7 @@ final class MovieCatalogViewModel: ObservableObject {
             )
             append(result, page: page, replace: replace)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
         isLoading = false
     }
@@ -97,7 +97,7 @@ final class MovieCatalogViewModel: ObservableObject {
             let result = try await TMDBAPI.shared.searchMovies(query: searchQuery, page: page)
             addMovies(result, page: page)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
         isLoading = false
     }
@@ -117,3 +117,4 @@ final class MovieCatalogViewModel: ObservableObject {
         }
     }
 }
+
