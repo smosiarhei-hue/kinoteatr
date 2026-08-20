@@ -8,12 +8,16 @@ final class TorrentPlayerService: ObservableObject {
     @Published var player: AVPlayer?
     @Published var errorMessage: String?
 
-    private let engine: TorrentEngine
+    private var engine: TorrentEngine?
     private let search = MagnetSearchService.shared
     private var statsTask: Task<Void, Never>?
 
-    init(engine: TorrentEngine = StubTorrentEngine()) {
-        self.engine = engine
+    private func makeEngine() -> TorrentEngine {
+        let url = AppSettings.shared.torrServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !url.isEmpty {
+            return TorrServerEngine(baseURL: url)
+        }
+        return StubTorrentEngine()
     }
 
     var isPlayable: Bool {
@@ -43,16 +47,12 @@ final class TorrentPlayerService: ObservableObject {
 
         state = .resolvingMetadata
         statsTask?.cancel()
-        statsTask = Task { [weak self] in
-            let fake = TorrentStats(downloadRate: 6_500_000, uploadRate: 120_000, peersConnected: 41)
-            while !Task.isCancelled {
-                await MainActor.run { self?.stats = fake }
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-        }
+
+        let activeEngine = makeEngine()
+        engine = activeEngine
 
         do {
-            let url = try await engine.startStream(magnet: candidate.magnet) { [weak self] snapshot in
+            let url = try await activeEngine.startStream(magnet: candidate.magnet) { [weak self] snapshot in
                 Task { @MainActor in
                     guard let self else { return }
                     self.stats = snapshot
@@ -74,11 +74,11 @@ final class TorrentPlayerService: ObservableObject {
 
     func pause() async {
         player?.pause()
-        await engine.pause()
+        await engine?.pause()
     }
 
     func resume() async {
-        await engine.resume()
+        await engine?.resume()
         player?.play()
     }
 
@@ -87,7 +87,8 @@ final class TorrentPlayerService: ObservableObject {
         statsTask = nil
         player?.pause()
         player = nil
-        await engine.stop()
+        await engine?.stop()
+        engine = nil
         state = .idle
         stats = TorrentStats()
     }

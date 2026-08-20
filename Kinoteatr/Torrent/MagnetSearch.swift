@@ -126,13 +126,20 @@ actor MagnetSearchService {
 
     func search(movie: Movie) async -> [MagnetResult] {
         reloadProviders()
-        for provider in providers {
-            if let results = try? await provider.search(movie: movie.title, year: movie.releaseYear),
-               !results.isEmpty {
-                return Self.rank(results)
+        var all: [MagnetResult] = []
+        await withTaskGroup(of: [MagnetResult].self) { group in
+            for provider in providers {
+                group.addTask {
+                    (try? await provider.search(movie: movie.title, year: movie.releaseYear)) ?? []
+                }
+            }
+            for await results in group {
+                all.append(contentsOf: results)
             }
         }
-        return []
+        var seen = Set<String>()
+        let unique = all.filter { seen.insert($0.magnet).inserted }
+        return Self.rank(unique)
     }
 
     static func rank(_ results: [MagnetResult]) -> [MagnetResult] {

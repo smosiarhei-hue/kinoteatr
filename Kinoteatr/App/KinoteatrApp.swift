@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct KinoteatrApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var settings = AppSettings.shared
     @StateObject private var player = TorrentPlayerService()
 

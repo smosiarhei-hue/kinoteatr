@@ -28,10 +28,12 @@ struct PlayerView: View {
             }
             .overlay(alignment: .top) { overlayHeader }
             .task {
+                OrientationManager.lockLandscape()
                 await playerService.stop()
                 await playerService.play(movie: movie, magnet: magnet)
             }
             .onDisappear {
+                OrientationManager.lockPortrait()
                 Task { await playerService.stop() }
             }
             .alert("Ошибка", isPresented: .init(

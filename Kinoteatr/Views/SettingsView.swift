@@ -68,6 +68,14 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                TextField("http://192.168.1.10:8090", text: $settings.torrServerURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                Text("TorrServer на ПК — реальный стриминг торрентов. Без него проигрывается демо-ролик.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Button("Выйти из режима разработчика", role: .destructive) {
                     settings.developerMode = false
                 }

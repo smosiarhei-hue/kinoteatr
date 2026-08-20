@@ -18,6 +18,14 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Bump version
+        run: |
+          COMMITS=$(git rev-list --count HEAD)
+          VERSION="1.0.$COMMITS"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Kinoteatr/Support/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $COMMITS" Kinoteatr/Support/Info.plist
+          echo "Version set to $VERSION (build $COMMITS)"
+
       - name: Generate Xcode project
         run: xcodegen generate
 
