@@ -16,6 +16,37 @@ struct MagnetResult: Identifiable {
         ]
         return markers.contains { n.contains($0) }
     }
+
+    var quality: String? {
+        let n = name.lowercased()
+        if n.contains("2160p") || n.contains("4k") || n.contains("uhd") { return "4K" }
+        if n.contains("1080p") || n.contains("fullhd") { return "1080p" }
+        if n.contains("720p") || n.contains("hd") { return "720p" }
+        if n.contains("480p") { return "480p" }
+        if n.contains("camrip") || n.contains("ts") || n.contains("cam") { return "CAM" }
+        return nil
+    }
+
+    var source: String? {
+        let n = name.lowercased()
+        if n.contains("web-dl") || n.contains("webdl") { return "WEB-DL" }
+        if n.contains("webrip") { return "WEBRip" }
+        if n.contains("bluray") || n.contains("bdrip") || n.contains("bdr") { return "Blu-ray" }
+        if n.contains("hdtv") { return "HDTV" }
+        if n.contains("dvdrip") || n.contains("dvd") { return "DVD" }
+        return nil
+    }
+
+    var audioLabel: String? {
+        let n = name.lowercased()
+        if n.contains("дубляж") || n.contains("дублирован") { return "Дубляж" }
+        if n.contains("многоголос") { return "Многоголосый" }
+        if n.contains("двухголос") { return "Двухголосый" }
+        if n.contains("одноголос") || n.contains("авторск") { return "Авторский" }
+        if n.contains("лицензия") { return "Лицензия" }
+        if hasRussianAudio { return "RU озвучка" }
+        return nil
+    }
 }
 
 protocol MagnetProvider {

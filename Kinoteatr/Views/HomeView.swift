@@ -37,8 +37,8 @@ struct HomeView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(appBackground.ignoresSafeArea())
-            .navigationTitle("Kinoteatr")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {

@@ -62,18 +62,21 @@ struct TorrentPickerView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
+            HStack(spacing: 8) {
+                if let quality = result.quality {
+                    badge(quality, color: .blue)
+                }
+                if let source = result.source {
+                    badge(source, color: .gray)
+                }
+                if let audio = result.audioLabel {
+                    badge(audio, color: .orange)
+                }
+            }
             HStack(spacing: 12) {
                 Label(ByteCountFormatter.string(fromByteCount: result.sizeBytes, countStyle: .file),
                       systemImage: "internaldrive")
                 Label("\(result.seeds)", systemImage: "arrow.down.circle")
-                if result.hasRussianAudio {
-                    Text("RU озвучка")
-                        .font(.caption2.weight(.bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(Color.orange.opacity(0.25)))
-                        .foregroundStyle(.orange)
-                }
                 Spacer()
                 Image(systemName: "play.circle.fill")
                     .foregroundStyle(.orange)
@@ -82,5 +85,14 @@ struct TorrentPickerView: View {
             .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
+    }
+
+    private func badge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(color.opacity(0.2)))
+            .foregroundStyle(color)
     }
 }
