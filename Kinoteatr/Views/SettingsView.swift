@@ -2,21 +2,21 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
-    @State private var versionTaps = 0
-    @State private var showDeveloperHint = false
+    @State private var showDevLogin = false
+    @State private var codeInput = ""
+    @State private var loginError = false
 
     var body: some View {
         NavigationStack {
             Form {
                 playbackSection
                 appearanceSection
-                if settings.developerMode {
-                    developerSection
-                }
+                developerSection
                 aboutSection
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showDevLogin) { devLoginSheet }
         }
     }
 
@@ -28,7 +28,7 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
 
             Picker("Качество по умолчанию", selection: $settings.defaultQuality) {
-                ForEach(["480p", "720p", "1080p", "4K"], id: \.self) { q in
+                ForEach(["Авто", "480p", "720p", "1080p", "4K"], id: \.self) { q in
                     Text(q).tag(q)
                 }
             }
@@ -48,30 +48,42 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder
     private var developerSection: some View {
-        Section {
-            SecureField("API key v3 или Read Access Token v4", text: $settings.apiKey)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textContentType(.password)
-            Text("TMDB. Поддерживаются v3 API key и v4 Read Access Token.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        if settings.developerMode {
+            Section {
+                SecureField("API key v3 или Read Access Token v4", text: $settings.apiKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(.password)
+                Text("TMDB. Поддерживаются v3 API key и v4 Read Access Token.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-            TextField("http://192.168.1.10:9117/api/v2.0/indexers/all/results?apikey=…", text: $settings.jackettURL)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-            Text("Jackett. Без него работает демо-провайдер magnet-ссылок.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                TextField("http://192.168.1.10:9117/api/v2.0/indexers/all/results?apikey=…", text: $settings.jackettURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                Text("Jackett. Без него работает демо-провайдер magnet-ссылок.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-            Button("Выключить режим разработчика", role: .destructive) {
-                settings.developerMode = false
-                versionTaps = 0
+                Button("Выйти из режима разработчика", role: .destructive) {
+                    settings.developerMode = false
+                }
+            } header: {
+                Label("Режим разработчика", systemImage: "wrench.and.screwdriver")
             }
-        } header: {
-            Label("Режим разработчика", systemImage: "wrench.and.screwdriver")
+        } else {
+            Section {
+                Button {
+                    showDevLogin = true
+                } label: {
+                    Label("Режим разработчика", systemImage: "lock")
+                }
+            } footer: {
+                Text("Доступ по коду разработчика.")
+            }
         }
     }
 
@@ -83,19 +95,6 @@ struct SettingsView: View {
                 Text(appVersion)
                     .foregroundStyle(.secondary)
             }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                versionTaps += 1
-                if versionTaps >= 7 && !settings.developerMode {
-                    settings.developerMode = true
-                    showDeveloperHint = true
-                }
-            }
-        }
-        .alert("Режим разработчика включён", isPresented: $showDeveloperHint) {
-            Button("ОК", role: .cancel) {}
-        } message: {
-            Text("Появились настройки TMDB и Jackett.")
         }
     }
 
@@ -103,5 +102,56 @@ struct SettingsView: View {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+}
+
+extension SettingsView {
+    private var devLoginSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    SecureField(settings.developerCode.isEmpty ? "Задайте код разработчика" : "Введите код разработчика", text: $codeInput)
+                        .keyboardType(.numberPad)
+                } footer: {
+                    Text(settings.developerCode.isEmpty
+                         ? "Первый вход: придумайте и введите свой код. Он сохранится на этом устройстве."
+                         : "Введите код, который вы задали ранее.")
+                }
+            }
+            .navigationTitle("Режим разработчика")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Отмена") {
+                        showDevLogin = false
+                        codeInput = ""
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Войти") { attemptLogin() }
+                        .disabled(codeInput.isEmpty)
+                }
+            }
+            .alert("Неверный код", isPresented: $loginError) {
+                Button("ОК", role: .cancel) {}
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func attemptLogin() {
+        if settings.developerCode.isEmpty {
+            settings.developerCode = codeInput
+            settings.developerMode = true
+            showDevLogin = false
+            codeInput = ""
+        } else if codeInput == settings.developerCode {
+            settings.developerMode = true
+            showDevLogin = false
+            codeInput = ""
+        } else {
+            loginError = true
+            codeInput = ""
+        }
     }
 }

@@ -29,10 +29,11 @@ final class AppSettings: ObservableObject {
     @AppStorage("tmdb_api_key") var apiKey: String = "30ca2adcda3a3d78ecdf2e12f5117231"
     @AppStorage("jackett_url") var jackettURL: String = ""
     @AppStorage("app_theme") private(set) var themeRaw: String = AppTheme.dark.rawValue
-    @AppStorage("default_quality") var defaultQuality: String = "1080p"
+    @AppStorage("default_quality") var defaultQuality: String = "Авто"
     @AppStorage("download_folder") var downloadFolder: String = "Kinoteatr"
     @AppStorage("prefer_russian_audio") var preferRussianAudio: Bool = true
     @AppStorage("developer_mode") var developerMode: Bool = false
+    @AppStorage("developer_code") var developerCode: String = ""
 
     var theme: AppTheme {
         AppTheme(rawValue: themeRaw) ?? .dark
