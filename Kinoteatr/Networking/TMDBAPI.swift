@@ -96,7 +96,7 @@ actor TMDBAPI {
         }
 
         var comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        let lang = Locale.current.identifier.hasPrefix("ru") ? "ru-RU" : "en-US"
+        let lang = "ru-RU"
         var query = items
         query.removeAll { ["api_key", "language"].contains($0.name) }
         query.append(URLQueryItem(name: "language", value: lang))

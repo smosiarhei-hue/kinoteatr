@@ -8,6 +8,7 @@ struct PlayRequest: Identifiable {
 
 struct HomeView: View {
     @StateObject private var viewModel = MovieCatalogViewModel()
+    @State private var detailMovie: Movie?
     @State private var pickMovie: Movie?
     @State private var playRequest: PlayRequest?
     @State private var showFilters = false
@@ -15,29 +16,29 @@ struct HomeView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var columns: [GridItem] {
-        switch sizeClass {
-        case .compact:
-            return [GridItem(.adaptive(minimum: 108, maximum: 136), spacing: 14)]
-        default:
-            return [GridItem(.adaptive(minimum: 140, maximum: 180), spacing: 18)]
-        }
+        let minimum: CGFloat = sizeClass == .compact ? 108 : 150
+        let maximum: CGFloat = sizeClass == .compact ? 140 : 200
+        return [GridItem(.adaptive(minimum: minimum, maximum: maximum), spacing: 14)]
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    heroHeader
+                VStack(alignment: .leading, spacing: 14) {
+                    if viewModel.useSearch {
+                        searchIndicator
+                    }
                     filterBar
                     catalogContent
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 32)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollDismissesKeyboard(.interactively)
             .background(appBackground.ignoresSafeArea())
             .navigationTitle("Kinoteatr")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -64,6 +65,14 @@ struct HomeView: View {
                 FilterSheetView(viewModel: viewModel)
                     .presentationDetents([.large, .medium])
             }
+            .sheet(item: $detailMovie) { movie in
+                MovieDetailView(movie: movie) {
+                    detailMovie = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        pickMovie = movie
+                    }
+                }
+            }
             .sheet(item: $pickMovie) { movie in
                 TorrentPickerView(movie: movie) { magnet in
                     playRequest = PlayRequest(movie: movie, magnet: magnet)
@@ -87,36 +96,13 @@ struct HomeView: View {
         )
     }
 
-    private var heroHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 10) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.orange.gradient)
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 42, height: 42)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Kinoteatr")
-                        .font(.title2.weight(.bold))
-                    Text("Каталог фильмов и быстрый запуск просмотра")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-                Spacer(minLength: 0)
-            }
-
-            if viewModel.useSearch {
-                Text("Результаты поиска")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.orange)
-            }
+    private var searchIndicator: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+            Text("Результаты поиска")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .font(.footnote.weight(.semibold))
+        .foregroundStyle(.orange)
         .accessibilityElement(children: .combine)
     }
 
@@ -130,7 +116,7 @@ struct HomeView: View {
             LazyVGrid(columns: columns, alignment: .center, spacing: 18) {
                 ForEach(viewModel.movies) { movie in
                     MovieCardView(movie: movie) {
-                        pickMovie = movie
+                        detailMovie = movie
                     }
                     .task {
                         await viewModel.loadMoreIfNeeded(current: movie)
@@ -148,13 +134,13 @@ struct HomeView: View {
     private var loadingState: some View {
         VStack(spacing: 14) {
             ProgressView()
-                .scaleEffect(1.05)
                 .tint(.orange)
             Text("Загрузка фильмов…")
                 .font(.callout.weight(.medium))
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, minHeight: 260)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
     }
 
     private func errorState(_ error: String) -> some View {
@@ -167,7 +153,8 @@ struct HomeView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
         }
-        .frame(maxWidth: .infinity, minHeight: 280)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
     }
 
     private var filterBar: some View {
