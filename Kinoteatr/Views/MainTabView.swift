@@ -13,5 +13,6 @@ struct MainTabView: View {
                 .tag(1)
         }
         .tint(.orange)
+        .dynamicTypeSize(...DynamicTypeSize.large)
     }
 }
