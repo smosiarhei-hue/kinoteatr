@@ -4,12 +4,19 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'   # ежедневная автопересборка в 03:00 UTC
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # полная история — чтобы версия (счётчик коммитов) росла
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -68,14 +75,22 @@ jobs:
             -o Kinoteatr-signed.ipa Kinoteatr-unsigned.ipa
           rm -f cert.p12 dev.mobileprovision
 
+      - name: Publish to GitHub Release (latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest \
+            --title "Kinoteatr latest" \
+            --notes "Автосборка от $(date -u +'%Y-%m-%d %H:%M UTC')" \
+            Kinoteatr-signed.ipa Kinoteatr-unsigned.ipa
+
       - uses: actions/upload-artifact@v4
         with:
           name: Kinoteatr-unsigned.ipa
           path: Kinoteatr-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
-        env:
-          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
         with:
           name: Kinoteatr-signed.ipa
           path: Kinoteatr-signed.ipa
