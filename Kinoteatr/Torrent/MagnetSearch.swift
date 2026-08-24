@@ -57,18 +57,18 @@ struct MagnetResult: Identifiable {
 
 protocol MagnetProvider {
     var name: String { get }
-    func search(movie: String, year: String?) async throws -> [MagnetResult]
+    func search(movie: Movie, year: String?) async throws -> [MagnetResult]
 }
 
 struct DemoMagnetProvider: MagnetProvider {
     let name = "Demo"
 
-    func search(movie: String, year: String?) async throws -> [MagnetResult] {
+    func search(movie: Movie, year: String?) async throws -> [MagnetResult] {
         try await Task.sleep(nanoseconds: 600_000_000)
         let hash = Array("0123456789abcdef")
         var h = ""
         for _ in 0..<40 { h.append(hash.randomElement()!) }
-        let label = year.map { "\(movie) (\($0))" } ?? movie
+        let label = year.map { "\(movie.title) (\($0))" } ?? movie.title
         return [
             MagnetResult(
                 magnet: "magnet:?xt=urn:btih:\(h)&dn=\(label.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")&tr=udp://tracker.opentrackr.org:1337/announce",
@@ -84,7 +84,20 @@ struct JackettMagnetProvider: MagnetProvider {
     let name = "Jackett"
     let baseURL: String
 
-    func search(movie: String, year: String?) async throws -> [MagnetResult] {
+    func search(movie: Movie, year: String?) async throws -> [MagnetResult] {
+        // Трекеры индексируются по оригинальным (английским) названиям:
+        // русское название из TMDB почти всегда даёт 0 результатов. Сначала
+        // ищем по оригиналу, при пустом результате пробуем локальное название.
+        let original = movie.originalTitle ?? movie.title
+        var results = try await searchTitle(original, year: year)
+        if results.isEmpty && original != movie.title {
+            print("[MagnetSearch] Jackett: по оригинальному названию пусто, пробую «\(movie.title)»")
+            results = try await searchTitle(movie.title, year: year)
+        }
+        return results
+    }
+
+    private func searchTitle(_ movie: String, year: String?) async throws -> [MagnetResult] {
         let query = year.map { "\(movie) \($0)" } ?? movie
         var comps = URLComponents(string: baseURL)
         comps?.queryItems = [URLQueryItem(name: "Query", value: query)]
@@ -142,7 +155,7 @@ actor MagnetSearchService {
         await withTaskGroup(of: [MagnetResult].self) { group in
             for provider in providers {
                 group.addTask {
-                    (try? await provider.search(movie: movie.title, year: movie.releaseYear)) ?? []
+                    (try? await provider.search(movie: movie, year: movie.releaseYear)) ?? []
                 }
             }
             for await results in group {

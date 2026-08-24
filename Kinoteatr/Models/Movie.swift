@@ -12,6 +12,7 @@ struct Movie: Identifiable, Codable, Hashable {
     let releaseDate: String?
     let genreIds: [Int]?
     let originalLanguage: String
+    let originalTitle: String?
 
     enum CodingKeys: String, CodingKey {
         case id, title, overview, popularity
@@ -22,6 +23,7 @@ struct Movie: Identifiable, Codable, Hashable {
         case releaseDate = "release_date"
         case genreIds = "genre_ids"
         case originalLanguage = "original_language"
+        case originalTitle = "original_title"
     }
 
     var releaseYear: String {
