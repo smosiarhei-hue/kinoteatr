@@ -71,7 +71,9 @@ actor TMDBAPI {
         guard !trimmed.isEmpty, let proxy = URL(string: trimmed) else {
             return [api, alt]
         }
-        return [proxy, api, alt]
+        // Прокси отдаёт корень TMDB-сервера: API живёт на /3, поэтому
+        // добавляем сегмент, иначе придёт 404 от api.themoviedb.org.
+        return [proxy.appendingPathComponent("3"), api, alt]
     }
 
     private let session: URLSession = {
