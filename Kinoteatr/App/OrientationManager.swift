@@ -5,19 +5,24 @@ final class OrientationManager {
 
     static func lockLandscape() {
         orientationMask = .landscape
-        apply(.landscapeRight)
+        rotate(to: .landscapeRight)
     }
 
     static func lockPortrait() {
         orientationMask = .portrait
-        apply(.portrait)
+        rotate(to: .portrait)
     }
 
-    private static func apply(_ orientation: UIInterfaceOrientation) {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
-        Task { @MainActor in
-            try? await scene.requestGeometryUpdate(.iOS(interfaceOrientation: orientation))
+    // iOS 26 SDK изменил requestGeometryUpdate (.iOS(...) больше не принимает
+    // аргументы и не компилируется), поэтому используем проверенный совместимый
+    // способ принудительного поворота: supportedInterfaceOrientationsFor из
+    // AppDelegate + UIDevice.setValue("orientation"), с защитой от отсутствия
+    // приватного селектора (на случай будущих iOS).
+    private static func rotate(to orientation: UIInterfaceOrientation) {
+        if UIDevice.current.responds(to: NSSelectorFromString("setOrientation:")) {
+            UIDevice.current.setValue(orientation.rawValue, forKey: "orientation")
         }
+        UIViewController.attemptRotationToDeviceOrientation()
     }
 }
 
