@@ -10,9 +10,12 @@ struct MagnetResult: Identifiable {
     var hasRussianAudio: Bool {
         let n = name.lowercased()
         let markers = [
-            "дубляж", "дублирован", "профессиональн", "многоголосый",
-            "многоголос", "русская озвучка", "русская дорожка", "русски",
-            "russian", "rus dub", "line", "лицензия", "voice", " озв",
+            "дубляж", "дублированн", "полный дубляж",
+            "закадров", "многоголос", "двухголос",
+            "авторск", "любительск", "одноголос",
+            "профессиональн", "проф. озвучка",
+            "русская озвучка", "русский перевод", "на русском", "русски",
+            "russian", "rus dub", "russian audio", "ru audio", "voice",
         ]
         return markers.contains { n.contains($0) }
     }
@@ -39,11 +42,14 @@ struct MagnetResult: Identifiable {
 
     var audioLabel: String? {
         let n = name.lowercased()
-        if n.contains("дубляж") || n.contains("дублирован") { return "Дубляж" }
+        if n.contains("дубляж") || n.contains("дублированн") { return "Дубляж" }
+        if n.contains("профессиональн") && n.contains("многоголос") { return "Проф. многоголосый" }
         if n.contains("многоголос") { return "Многоголосый" }
         if n.contains("двухголос") { return "Двухголосый" }
-        if n.contains("одноголос") || n.contains("авторск") { return "Авторский" }
-        if n.contains("лицензия") { return "Лицензия" }
+        if n.contains("закадров") { return "Закадровый" }
+        if n.contains("авторск") { return "Авторский" }
+        if n.contains("любительск") { return "Любительский" }
+        if n.contains("одноголос") { return "Одноголосый" }
         if hasRussianAudio { return "RU озвучка" }
         return nil
     }
@@ -150,14 +156,30 @@ actor MagnetSearchService {
 
     static func rank(_ results: [MagnetResult]) -> [MagnetResult] {
         let prefer = AppSettings.shared.preferRussianAudio
-        guard prefer else {
-            return results.sorted { $0.seeds > $1.seeds }
-        }
-        return results.sorted {
-            if $0.hasRussianAudio != $1.hasRussianAudio {
-                return $0.hasRussianAudio
+        let sorted: [MagnetResult]
+        if prefer {
+            sorted = results.sorted {
+                if $0.hasRussianAudio != $1.hasRussianAudio {
+                    return $0.hasRussianAudio
+                }
+                return $0.seeds > $1.seeds
             }
-            return $0.seeds > $1.seeds
+        } else {
+            sorted = results.sorted { $0.seeds > $1.seeds }
         }
+        // Если в настройках выбрано конкретное качество («480p/720p/1080p/4K»),
+        // подходящие раздачи поднимаем в начало списка (остальные тоже видны).
+        guard let preferred = qualityPreference() else { return sorted }
+        var matching: [MagnetResult] = []
+        var rest: [MagnetResult] = []
+        for r in sorted {
+            if r.quality == preferred { matching.append(r) } else { rest.append(r) }
+        }
+        return matching + rest
+    }
+
+    private static func qualityPreference() -> String? {
+        let q = AppSettings.shared.defaultQuality
+        return ["480p", "720p", "1080p", "4K"].contains(q) ? q : nil
     }
 }

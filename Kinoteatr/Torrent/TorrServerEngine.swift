@@ -65,6 +65,23 @@ final class TorrServerEngine: TorrentEngine {
         let fileIndex = chosen.id
         let totalSize = fileStats.reduce(Int64(0)) { $0 + ($1.length ?? 0) }
 
+        // Ждём старта загрузки до 15 секунд: если байты не пошли и пиров нет —
+        // у раздачи нет сидов/трекеров, сразу показываем понятную ошибку.
+        for _ in 0..<15 {
+            if let t = await fetchTorrent(hash: hash) {
+                let progressed = (t.preloaded_bytes ?? 0) > 0 || (t.download_speed ?? 0) > 0
+                let hasPeers = (t.active_peers ?? 0) > 0
+                if progressed || hasPeers || (t.stat ?? 0) >= 3 { break }
+            }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        if let t = await fetchTorrent(hash: hash) {
+            let progressed = (t.preloaded_bytes ?? 0) > 0 || (t.download_speed ?? 0) > 0
+            if !progressed && (t.active_peers ?? 0) == 0 && (t.stat ?? 0) < 3 {
+                throw TorrentEngineError.noPeers
+            }
+        }
+
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)

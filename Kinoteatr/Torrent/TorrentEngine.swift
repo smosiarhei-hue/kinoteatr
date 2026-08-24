@@ -41,6 +41,7 @@ enum TorrentEngineError: LocalizedError {
     case bufferTimeout
     case invalidServerURL
     case metadataTimeout
+    case noPeers
 
     var errorDescription: String? {
         switch self {
@@ -53,7 +54,9 @@ enum TorrentEngineError: LocalizedError {
         case .invalidServerURL:
             return "Некорректный адрес TorrServer. Проверьте URL в настройках (например http://192.168.1.10:8090)."
         case .metadataTimeout:
-            return "TorrServer не получил список файлов раздачи. Проверьте доступность сервера и наличие сидов у раздачи."
+            return "TorrServer не получил список файлов раздачи. Проверьте доступность сервера и magnet-ссылку."
+        case .noPeers:
+            return "Раздача не качается: нет сидов или трекеры недоступны. Попробуйте другую раздачу с большим числом сидов."
         }
     }
 }

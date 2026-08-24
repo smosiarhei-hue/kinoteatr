@@ -38,7 +38,7 @@ struct TorrentPickerView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Выбор раздачи")
+            .navigationTitle("Выбор раздачи · \(results.count)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
