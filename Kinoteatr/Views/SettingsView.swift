@@ -80,6 +80,14 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                TextField("http://192.168.0.150:8088 (если TMDB заблокирован без VPN)", text: $settings.tmdbProxyURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                Text("Прокси TMDB на ПК: каталог и постеры идут через него, VPN не нужен. Пусто = напрямую с api.themoviedb.org.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Text("TorrServer на ПК — реальный стриминг торрентов. Без него проигрывается демо-ролик.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

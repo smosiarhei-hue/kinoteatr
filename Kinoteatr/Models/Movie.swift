@@ -38,8 +38,15 @@ struct Movie: Identifiable, Codable, Hashable {
     }
 
     var backdropURL: URL? {
-        let base = URL(string: "https://image.tmdb.org/t/p/w780")!
-        return backdropPath.flatMap { base.appendingPathComponent($0) }
+        guard let backdropPath else { return nil }
+        let trimmed = AppSettings.shared.tmdbProxyURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base: URL
+        if !trimmed.isEmpty, let proxy = URL(string: trimmed) {
+            base = proxy.appendingPathComponent("t/p/w780")
+        } else {
+            base = URL(string: "https://image.tmdb.org/t/p/w780")!
+        }
+        return base.appendingPathComponent(backdropPath)
     }
 
     var genreNames: [String] {

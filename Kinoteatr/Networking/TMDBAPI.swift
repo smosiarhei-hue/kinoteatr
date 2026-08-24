@@ -64,10 +64,15 @@ enum DiscoverSort: String, CaseIterable, Identifiable {
 actor TMDBAPI {
     static let shared = TMDBAPI()
 
-    private let hosts = [
-        URL(string: "https://api.themoviedb.org/3")!,
-        URL(string: "https://api.tmdb.org/3")!,
-    ]
+    private var hosts: [URL] {
+        let api = URL(string: "https://api.themoviedb.org/3")!
+        let alt = URL(string: "https://api.tmdb.org/3")!
+        let trimmed = AppSettings.shared.tmdbProxyURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let proxy = URL(string: trimmed) else {
+            return [api, alt]
+        }
+        return [proxy, api, alt]
+    }
 
     private let session: URLSession = {
         let configuration = URLSessionConfiguration.default

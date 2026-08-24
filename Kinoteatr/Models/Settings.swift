@@ -30,6 +30,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("jackett_url") var jackettURL: String = ""
     @AppStorage("torrserver_url") var torrServerURL: String = ""
     @AppStorage("torrserver_password") var torrServerPassword: String = ""
+    @AppStorage("tmdb_proxy_url") var tmdbProxyURL: String = ""
     @AppStorage("app_theme") private(set) var themeRaw: String = AppTheme.dark.rawValue
     @AppStorage("default_quality") var defaultQuality: String = "Авто"
     @AppStorage("download_folder") var downloadFolder: String = "Kinoteatr"
@@ -53,7 +54,11 @@ struct CacheSettings: Codable {
     var lastSaved: Date
 
     static var posterBase: URL {
-        URL(string: "https://image.tmdb.org/t/p/w342")!
+        let trimmed = AppSettings.shared.tmdbProxyURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, let proxy = URL(string: trimmed) {
+            return proxy.appendingPathComponent("t/p/w342")
+        }
+        return URL(string: "https://image.tmdb.org/t/p/w342")!
     }
 
     static let path: URL = {
