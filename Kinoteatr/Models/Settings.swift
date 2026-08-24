@@ -31,7 +31,7 @@ final class AppSettings: ObservableObject {
     @AppStorage("torrserver_url") var torrServerURL: String = ""
     @AppStorage("torrserver_password") var torrServerPassword: String = ""
     @AppStorage("tmdb_proxy_url") var tmdbProxyURL: String = ""
-    @AppStorage("remote_config_url") var remoteConfigURL: String = ""
+    @AppStorage("remote_config_url") var remoteConfigURL: String = "http://192.168.0.150:8088/config"
     @AppStorage("app_theme") private(set) var themeRaw: String = AppTheme.dark.rawValue
     @AppStorage("default_quality") var defaultQuality: String = "Авто"
     @AppStorage("download_folder") var downloadFolder: String = "Kinoteatr"

@@ -88,13 +88,25 @@ struct JackettMagnetProvider: MagnetProvider {
         // Трекеры индексируются по оригинальным (английским) названиям:
         // русское название из TMDB почти всегда даёт 0 результатов. Сначала
         // ищем по оригиналу, при пустом результате пробуем локальное название.
+        // Каскад запросов: (оригинал+год) -> (оригинал) -> (локальное+год) -> (локальное).
+        // Останавливаемся на первом непустом результате — так трекеры находят больше.
         let original = movie.originalTitle ?? movie.title
-        var results = try await searchTitle(original, year: year)
-        if results.isEmpty && original != movie.title {
-            print("[MagnetSearch] Jackett: по оригинальному названию пусто, пробую «\(movie.title)»")
-            results = try await searchTitle(movie.title, year: year)
+        var candidates: [(String, String?)] = [
+            (original, year),
+            (original, nil),
+            (movie.title, year),
+            (movie.title, nil),
+        ]
+        var seen = Set<String>()
+        for (query, qyear) in candidates {
+            let key = "\(query)|\(qyear ?? "")"
+            if seen.contains(key) { continue }
+            seen.insert(key)
+            let results = try await searchTitle(query, year: qyear)
+            if !results.isEmpty { return results }
+            print("[MagnetSearch] Jackett: «\(query) \(qyear ?? "")» — пусто, пробую дальше")
         }
-        return results
+        return []
     }
 
     private func searchTitle(_ movie: String, year: String?) async throws -> [MagnetResult] {

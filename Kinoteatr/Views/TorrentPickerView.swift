@@ -71,6 +71,8 @@ struct TorrentPickerView: View {
     }
 
     private func load() async {
+        // Свежие настройки с ПК (config.json) перед поиском
+        await RemoteConfigService.shared.sync()
         let outcome = await MagnetSearchService.shared.search(movie: movie)
         results = outcome.results
         diagnostics = outcome.diagnostics
