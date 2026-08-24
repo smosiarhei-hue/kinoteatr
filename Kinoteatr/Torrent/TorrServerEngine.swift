@@ -70,14 +70,14 @@ final class TorrServerEngine: TorrentEngine {
         for _ in 0..<15 {
             if let t = await fetchTorrent(hash: hash) {
                 let progressed = (t.preloaded_bytes ?? 0) > 0 || (t.download_speed ?? 0) > 0
-                let hasPeers = (t.active_peers ?? 0) > 0
+                let hasPeers = (t.total_peers ?? 0) > 0
                 if progressed || hasPeers || (t.stat ?? 0) >= 3 { break }
             }
             try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
         if let t = await fetchTorrent(hash: hash) {
             let progressed = (t.preloaded_bytes ?? 0) > 0 || (t.download_speed ?? 0) > 0
-            if !progressed && (t.active_peers ?? 0) == 0 && (t.stat ?? 0) < 3 {
+            if !progressed && (t.total_peers ?? 0) == 0 && (t.stat ?? 0) < 3 {
                 throw TorrentEngineError.noPeers
             }
         }
@@ -93,13 +93,33 @@ final class TorrServerEngine: TorrentEngine {
             }
         }
 
-        let streamURL = baseURL
-            .appendingPathComponent("stream")
-            .appendingPathComponent(hash)
-            .appendingPathComponent("\(fileIndex)")
-        var comps = URLComponents(url: streamURL, resolvingAgainstBaseURL: false)
-        comps?.queryItems = [URLQueryItem(name: "play", value: nil)]
-        return comps?.url ?? streamURL
+        // iOS не играет mkv/avi/webm нативно. Для таких файлов берём HLS-транскод
+        // gst-сборки TorrServer (master.m3u8 играется AVPlayer'ом), для
+        // mp4/m4v/mov/ts — прямой стрим. Форматы URL проверены против MatriX.143.
+        let streamURL: URL?
+        if Self.isPlayableByAVPlayer(chosen.path ?? "") {
+            let pathName = (chosen.path ?? "").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
+            var comps = URLComponents(string: baseURL.absoluteString + "/stream/" + pathName)
+            comps?.queryItems = [
+                URLQueryItem(name: "link", value: hash),
+                URLQueryItem(name: "index", value: "\(fileIndex)"),
+                URLQueryItem(name: "play", value: nil),
+            ]
+            streamURL = comps?.url
+        } else {
+            let gstURL = baseURL
+                .appendingPathComponent("gst")
+                .appendingPathComponent(hash)
+                .appendingPathComponent("master.m3u8")
+            var comps = URLComponents(url: gstURL, resolvingAgainstBaseURL: false)
+            comps?.queryItems = [
+                URLQueryItem(name: "index", value: "\(fileIndex)"),
+                URLQueryItem(name: "audio", value: "0"),
+            ]
+            streamURL = comps?.url
+        }
+        guard streamURL != nil else { throw TorrentEngineError.invalidServerURL }
+        return streamURL!
     }
 
     private static func isVideoFile(_ path: String) -> Bool {
@@ -125,15 +145,15 @@ final class TorrServerEngine: TorrentEngine {
     }
 
     private static func makeStats(from torrent: TorrTorrent, totalSize: Int64) -> TorrentStats {
-        let preloaded = torrent.preloaded_bytes ?? 0
-        let size = totalSize > 0 ? totalSize : (torrent.data_size ?? 0)
-        let progress = size > 0 ? Double(preloaded) / Double(size) : 0
+        // MatriX.143 не отдаёт preloaded/download_speed/active_peers.
+        // Прогресс оцениваем по stat: 3 = раздача качается. Пиры — total_peers.
+        let working = (torrent.stat ?? 0) >= 3
         return TorrentStats(
-            progress: min(progress, 1.0),
-            downloadRate: Int64(torrent.download_speed ?? 0),
-            uploadRate: Int64(torrent.upload_speed ?? 0),
-            peersConnected: torrent.active_peers ?? 0,
-            bufferSize: preloaded
+            progress: working ? 1.0 : 0,
+            downloadRate: 0,
+            uploadRate: 0,
+            peersConnected: torrent.total_peers ?? 0,
+            bufferSize: working ? totalSize : 0
         )
     }
 
@@ -175,6 +195,8 @@ struct TorrTorrent: Codable {
     let download_speed: Double?
     let upload_speed: Double?
     let total_peers: Int?
+    let pending_peers: Int?
+    let torrent_size: Int64?
     let active_peers: Int?
     let connected_seeders: Int?
     let file_stats: [TorrFileStat]?
