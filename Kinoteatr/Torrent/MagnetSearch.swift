@@ -112,7 +112,7 @@ actor MagnetSearchService {
         var list: [MagnetProvider] = []
         let jackett = AppSettings.shared.jackettURL
         if !jackett.isEmpty { list.append(JackettMagnetProvider(baseURL: jackett)) }
-        list.append(DemoMagnetProvider())
+        if AppSettings.shared.torrServerURL.isEmpty { list.append(DemoMagnetProvider()) }
         return list
     }()
 
@@ -120,7 +120,7 @@ actor MagnetSearchService {
         var list: [MagnetProvider] = []
         let jackett = AppSettings.shared.jackettURL
         if !jackett.isEmpty { list.append(JackettMagnetProvider(baseURL: jackett)) }
-        list.append(DemoMagnetProvider())
+        if AppSettings.shared.torrServerURL.isEmpty { list.append(DemoMagnetProvider()) }
         providers = list
     }
 
