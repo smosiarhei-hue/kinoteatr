@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @StateObject private var remote = RemoteConfigService.shared
     @State private var showDevLogin = false
     @State private var codeInput = ""
     @State private var loginError = false
@@ -12,6 +13,7 @@ struct SettingsView: View {
                 playbackSection
                 appearanceSection
                 developerSection
+                syncSection
                 aboutSection
             }
             .navigationTitle("Настройки")
@@ -108,6 +110,34 @@ struct SettingsView: View {
             } footer: {
                 Text("Доступ по коду разработчика.")
             }
+        }
+    }
+
+    private var syncSection: some View {
+        Section {
+            HStack {
+                Image(systemName: remote.syncError == nil ? "checkmark.circle" : "exclamationmark.triangle")
+                    .foregroundStyle(remote.syncError == nil ? .green : .orange)
+                Text(remote.syncError ?? remote.lastSyncText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Button("Проверить сейчас") {
+                Task { await remote.sync() }
+            }
+            if settings.developerMode {
+                TextField("http://192.168.0.150:8088/config (необязательно)", text: $settings.remoteConfigURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                Text("Вручную заданный адрес конфигурации. Пусто = адрес берётся из TorrServer.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Label("Синхронизация с ПК", systemImage: "arrow.triangle.2.circlepath")
+        } footer: {
+            Text("Настройки серверов приложение берёт из файла config.json на ПК каждые 30 секунд. Правишь файл на ПК — телефон подхватывает сам, без переустановки.")
         }
     }
 
