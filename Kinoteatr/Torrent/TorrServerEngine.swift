@@ -54,10 +54,15 @@ final class TorrServerEngine: TorrentEngine {
         }
 
         let videoFiles = fileStats.filter { Self.isVideoFile($0.path ?? "") }
-        let chosen = videoFiles.max(by: { ($0.length ?? 0) < ($1.length ?? 0) })
-        guard let fileIndex = chosen?.id else {
+        // iOS AVPlayer нативно умеет mp4/m4v/mov (и ts). mkv/avi/webm не
+        // воспроизводятся: берём их только если играбельных файлов нет вовсе.
+        let playable = videoFiles.filter { Self.isPlayableByAVPlayer($0.path ?? "") }
+        let candidates = playable.isEmpty ? videoFiles : playable
+        guard let chosen = candidates.max(by: { ($0.length ?? 0) < ($1.length ?? 0) }) else {
             throw TorrentEngineError.metadataTimeout
         }
+        print("[TorrServer] выбран файл: \(chosen.path ?? "?") (\(chosen.length ?? 0) байт)")
+        let fileIndex = chosen.id
         let totalSize = fileStats.reduce(Int64(0)) { $0 + ($1.length ?? 0) }
 
         pollTask = Task { [weak self] in
@@ -82,7 +87,12 @@ final class TorrServerEngine: TorrentEngine {
 
     private static func isVideoFile(_ path: String) -> Bool {
         let lower = path.lowercased()
-        return [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts"].contains { lower.hasSuffix($0) }
+        return [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"].contains { lower.hasSuffix($0) }
+    }
+
+    private static func isPlayableByAVPlayer(_ path: String) -> Bool {
+        let lower = path.lowercased()
+        return [".mp4", ".m4v", ".mov", ".ts"].contains { lower.hasSuffix($0) }
     }
 
     private func fetchTorrent(hash: String) async -> TorrTorrent? {
