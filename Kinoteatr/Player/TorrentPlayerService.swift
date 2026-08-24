@@ -38,9 +38,10 @@ final class TorrentPlayerService: ObservableObject {
         if let magnet {
             candidate = magnet
         } else {
-            let candidates = await search.search(movie: movie)
-            guard let first = candidates.first else {
-                fail("Не найдены magnet-ссылки для <\(movie.title)>. Проверьте Jackett в настройках.")
+            let outcome = await search.search(movie: movie)
+            guard let first = outcome.results.first else {
+                let detail = outcome.diagnostics.joined(separator: "; ")
+                fail("Не найдены magnet-ссылки для <\(movie.title)>." + (detail.isEmpty ? "" : " \(detail)"))
                 return
             }
             candidate = first
