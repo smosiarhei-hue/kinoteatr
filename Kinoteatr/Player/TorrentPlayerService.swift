@@ -11,11 +11,12 @@ final class TorrentPlayerService: ObservableObject {
     private var engine: TorrentEngine?
     private let search = MagnetSearchService.shared
     private var statsTask: Task<Void, Never>?
+    private var itemStatusObservation: NSKeyValueObservation?
 
-    private func makeEngine() -> TorrentEngine {
+    private func makeEngine() throws -> TorrentEngine {
         let url = AppSettings.shared.torrServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
         if !url.isEmpty {
-            return TorrServerEngine(baseURL: url)
+            return try TorrServerEngine(baseURL: url)
         }
         return StubTorrentEngine()
     }
@@ -39,7 +40,7 @@ final class TorrentPlayerService: ObservableObject {
         } else {
             let candidates = await search.search(movie: movie)
             guard let first = candidates.first else {
-                fail("Не найдено magnet-ссылок для «\(movie.title)»")
+                fail("Не найдены magnet-ссылки для <\(movie.title)>. Проверьте Jackett в настройках.")
                 return
             }
             candidate = first
@@ -48,7 +49,14 @@ final class TorrentPlayerService: ObservableObject {
         state = .resolvingMetadata
         statsTask?.cancel()
 
-        let activeEngine = makeEngine()
+        engine = nil
+        let activeEngine: TorrentEngine
+        do {
+            activeEngine = try makeEngine()
+        } catch {
+            fail(error.localizedDescription)
+            return
+        }
         engine = activeEngine
 
         do {
@@ -63,6 +71,14 @@ final class TorrentPlayerService: ObservableObject {
             }
             state = .ready(streamURL: url)
             let item = AVPlayerItem(url: url)
+            itemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if item.status == .failed {
+                        self.fail("Не удалось воспроизвести поток (\(item.error?.localizedDescription ?? "ошибка плеера")). Проверьте доступность TorrServer и наличие сидов у раздачи.")
+                    }
+                }
+            }
             let avPlayer = AVPlayer(playerItem: item)
             avPlayer.automaticallyWaitsToMinimizeStalling = true
             player = avPlayer
@@ -85,6 +101,7 @@ final class TorrentPlayerService: ObservableObject {
     func stop() async {
         statsTask?.cancel()
         statsTask = nil
+        itemStatusObservation = nil
         player?.pause()
         player = nil
         await engine?.stop()

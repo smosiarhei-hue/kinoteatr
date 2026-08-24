@@ -5,10 +5,17 @@ final class TorrServerEngine: TorrentEngine {
     private var currentHash: String?
     private var pollTask: Task<Void, Never>?
 
-    init(baseURL: String) {
+    init(baseURL: String) throws {
         var trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasSuffix("/") { trimmed.removeLast() }
-        self.baseURL = URL(string: trimmed)!
+        guard let url = URL(string: trimmed), !trimmed.isEmpty else {
+            throw TorrentEngineError.invalidServerURL
+        }
+        self.baseURL = url
+    }
+
+    private var password: String {
+        AppSettings.shared.torrServerPassword.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func startStream(magnet: String, onStats: @escaping (TorrentStats) -> Void) async throws -> URL {
@@ -18,15 +25,17 @@ final class TorrServerEngine: TorrentEngine {
         var request = URLRequest(url: addURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = ["link": magnet, "title": "Fluxo", "poster": ""]
+        var body: [String: Any] = ["link": magnet, "title": "Fluxo", "poster": ""]
+        if !password.isEmpty { body["password"] = password }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw TorrentEngineError.backendNotLinked
         }
-
-        let torr = try Self.decoder.decode(TorrTorrent.self, from: data)
+        guard let torr = try? Self.decoder.decode(TorrTorrent.self, from: data) else {
+            throw TorrentEngineError.backendNotLinked
+        }
         guard let hash = torr.hash, !hash.isEmpty else { throw TorrentEngineError.backendNotLinked }
         currentHash = hash
 
@@ -40,10 +49,15 @@ final class TorrServerEngine: TorrentEngine {
                 }
             }
         }
+        guard !fileStats.isEmpty else {
+            throw TorrentEngineError.metadataTimeout
+        }
 
         let videoFiles = fileStats.filter { Self.isVideoFile($0.path ?? "") }
         let chosen = videoFiles.max(by: { ($0.length ?? 0) < ($1.length ?? 0) })
-        let fileIndex = chosen?.id ?? 1
+        guard let fileIndex = chosen?.id else {
+            throw TorrentEngineError.metadataTimeout
+        }
         let totalSize = fileStats.reduce(Int64(0)) { $0 + ($1.length ?? 0) }
 
         pollTask = Task { [weak self] in
@@ -76,7 +90,9 @@ final class TorrServerEngine: TorrentEngine {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: ["action": "get", "hash": hash])
+        var body: [String: Any] = ["action": "get", "hash": hash]
+        if !password.isEmpty { body["password"] = password }
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         guard let (data, _) = try? await URLSession.shared.data(for: request) else { return nil }
         return try? Self.decoder.decode(TorrTorrent.self, from: data)
     }
@@ -108,7 +124,9 @@ final class TorrServerEngine: TorrentEngine {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try? JSONSerialization.data(withJSONObject: ["action": "rem", "hash": hash])
+            var body: [String: Any] = ["action": "rem", "hash": hash]
+            if !password.isEmpty { body["password"] = password }
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
             _ = try? await URLSession.shared.data(for: request)
         }
         currentHash = nil

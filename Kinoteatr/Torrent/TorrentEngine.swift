@@ -39,15 +39,21 @@ enum TorrentEngineError: LocalizedError {
     case backendNotLinked
     case magnetInvalid
     case bufferTimeout
+    case invalidServerURL
+    case metadataTimeout
 
     var errorDescription: String? {
         switch self {
         case .backendNotLinked:
-            return "Торрент-движок не подключён. Добавь libtorrent-streamer (см. README)."
+            return "Бэкенд-движок не подключён. Проверьте адрес TorrServer в настройках."
         case .magnetInvalid:
             return "Некорректная magnet-ссылка."
         case .bufferTimeout:
-            return "Не удалось набрать буфер для воспроизведения."
+            return "Не удалось получить данные для воспроизведения."
+        case .invalidServerURL:
+            return "Некорректный адрес TorrServer. Проверьте URL в настройках (например http://192.168.1.10:8090)."
+        case .metadataTimeout:
+            return "TorrServer не получил список файлов раздачи. Проверьте доступность сервера и наличие сидов у раздачи."
         }
     }
 }

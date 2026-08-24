@@ -14,11 +14,17 @@ struct TorrentPickerView: View {
                 if isLoading {
                     ProgressView("Поиск раздач…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if searchUnavailable {
+                    ContentUnavailableView {
+                        Label("Не настроен поиск раздач", systemImage: "magnifyingglass")
+                    } description: {
+                        Text(searchUnavailableMessage)
+                    }
                 } else if results.isEmpty {
                     ContentUnavailableView {
-                        Label("Раздач не найдено", systemImage: "magnifyingglass")
+                        Label("Ничего не найдено", systemImage: "magnifyingglass")
                     } description: {
-                        Text("Для «\(movie.title)» ничего не нашлось. Проверьте Jackett в настройках.")
+                        Text("Для \(movie.title) раздач не найдено. Проверьте Jackett или попробуйте другой фильм.")
                     }
                 } else {
                     List(results) { result in
@@ -32,7 +38,7 @@ struct TorrentPickerView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Выберите раздачу")
+            .navigationTitle("Выбор раздачи")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -42,6 +48,16 @@ struct TorrentPickerView: View {
             .task { await load() }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var searchUnavailable: Bool {
+        let jackett = AppSettings.shared.jackettURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let torr = AppSettings.shared.torrServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        return jackett.isEmpty && !torr.isEmpty
+    }
+
+    private var searchUnavailableMessage: String {
+        "TorrServer настроен, но источник magnet-ссылок (Jackett) не задан.\n\nДобавьте URL Jackett в Настройках (Режим разработчика) или очистите адрес TorrServer, чтобы включить демо-режим."
     }
 
     private func load() async {

@@ -85,7 +85,10 @@ struct JackettMagnetProvider: MagnetProvider {
         guard let url = comps?.url else { return [] }
 
         let (data, response) = try await URLSession.shared.data(from: url)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return [] }
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            print("[MagnetSearch] Jackett: HTTP \(String(describing: (response as? HTTPURLResponse)?.statusCode)) — проверьте URL и API-ключ")
+            return []
+        }
 
         struct Row: Codable {
             let Title: String?
@@ -108,21 +111,24 @@ struct JackettMagnetProvider: MagnetProvider {
 actor MagnetSearchService {
     static let shared = MagnetSearchService()
 
-    private var providers: [MagnetProvider] = {
+    private func makeProviders() -> [MagnetProvider] {
         var list: [MagnetProvider] = []
-        let jackett = AppSettings.shared.jackettURL
-        if !jackett.isEmpty { list.append(JackettMagnetProvider(baseURL: jackett)) }
-        if AppSettings.shared.torrServerURL.isEmpty { list.append(DemoMagnetProvider()) }
+        let jackett = AppSettings.shared.jackettURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let torr = AppSettings.shared.torrServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !jackett.isEmpty {
+            list.append(JackettMagnetProvider(baseURL: jackett))
+        }
+        if torr.isEmpty {
+            // Демо-ссылки воспроизводятся только демо-движком (StubTorrentEngine),
+            // поэтому добавляем их, только когда TorrServer не настроен.
+            list.append(DemoMagnetProvider())
+        }
         return list
-    }()
-
-    func reloadProviders() {
-        var list: [MagnetProvider] = []
-        let jackett = AppSettings.shared.jackettURL
-        if !jackett.isEmpty { list.append(JackettMagnetProvider(baseURL: jackett)) }
-        if AppSettings.shared.torrServerURL.isEmpty { list.append(DemoMagnetProvider()) }
-        providers = list
     }
+
+    var providers: [MagnetProvider] { makeProviders() }
+
+    func reloadProviders() {}
 
     func search(movie: Movie) async -> [MagnetResult] {
         reloadProviders()

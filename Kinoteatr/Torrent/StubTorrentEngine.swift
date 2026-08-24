@@ -41,6 +41,17 @@ final class StubTorrentEngine: TorrentEngine {
         let server = LocalHTTPServer(folder: fileURL.deletingLastPathComponent(), port: 0)
         try server.start()
         self.server = server
+
+        // Порт 0 => эфемерный: ждём, пока NWListener реально назначит порт,
+        // иначе URL вида http://127.0.0.1:0/... нечем проигрывать.
+        for _ in 0..<30 {
+            if server.actualPort != 0 { break }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard server.actualPort != 0 else {
+            throw TorrentEngineError.backendNotLinked
+        }
+
         return server.streamURL(for: fileURL.lastPathComponent)
     }
 
