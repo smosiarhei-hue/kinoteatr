@@ -6,6 +6,7 @@ struct TorrentPickerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var results: [MagnetResult] = []
+    @State private var diagnostics: [String] = []
     @State private var isLoading = true
 
     var body: some View {
@@ -24,7 +25,7 @@ struct TorrentPickerView: View {
                     ContentUnavailableView {
                         Label("Ничего не найдено", systemImage: "magnifyingglass")
                     } description: {
-                        Text("Для \(movie.title) раздач не найдено. Проверьте Jackett или попробуйте другой фильм.")
+                        Text(emptyMessage)
                     }
                 } else {
                     List(results) { result in
@@ -60,8 +61,19 @@ struct TorrentPickerView: View {
         "TorrServer настроен, но источник magnet-ссылок (Jackett) не задан.\n\nДобавьте URL Jackett в Настройках (Режим разработчика) или очистите адрес TorrServer, чтобы включить демо-режим."
     }
 
+    private var emptyMessage: String {
+        var msg = "Для \(movie.title) раздач не найдено."
+        if !diagnostics.isEmpty {
+            msg += "\n\n" + diagnostics.joined(separator: "\n")
+        }
+        msg += "\n\nКак проверить:\n• телефон должен быть в той же Wi-Fi, что и ПК, без VPN;\n• URL Jackett в Настройках: http://192.168.0.150:9117/api/v2.0/indexers/all/results?apikey=ВАШ_КЛЮЧ;\n• в Safari на телефоне должен открываться http://192.168.0.150:9117 (страница входа Jackett)."
+        return msg
+    }
+
     private func load() async {
-        results = await MagnetSearchService.shared.search(movie: movie)
+        let outcome = await MagnetSearchService.shared.search(movie: movie)
+        results = outcome.results
+        diagnostics = outcome.diagnostics
         isLoading = false
     }
 

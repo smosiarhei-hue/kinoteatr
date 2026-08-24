@@ -127,6 +127,11 @@ struct JackettMagnetProvider: MagnetProvider {
     }
 }
 
+struct SearchOutcome {
+    let results: [MagnetResult]
+    let diagnostics: [String]
+}
+
 actor MagnetSearchService {
     static let shared = MagnetSearchService()
 
@@ -149,22 +154,30 @@ actor MagnetSearchService {
 
     func reloadProviders() {}
 
-    func search(movie: Movie) async -> [MagnetResult] {
+    func search(movie: Movie) async -> SearchOutcome {
         reloadProviders()
         var all: [MagnetResult] = []
-        await withTaskGroup(of: [MagnetResult].self) { group in
-            for provider in providers {
-                group.addTask {
-                    (try? await provider.search(movie: movie, year: movie.releaseYear)) ?? []
+        var diagnostics: [String] = []
+        let active = providers
+        if active.isEmpty {
+            diagnostics.append("Источники не настроены: задайте URL Jackett (и/или TorrServer) в Настройках.")
+        }
+        for provider in active {
+            do {
+                let found = try await provider.search(movie: movie, year: movie.releaseYear)
+                all.append(contentsOf: found)
+                if found.isEmpty {
+                    diagnostics.append("\(provider.name): вернул 0 раздач по запросу.")
+                } else {
+                    diagnostics.append("\(provider.name): найдено \(found.count) раздач.")
                 }
-            }
-            for await results in group {
-                all.append(contentsOf: results)
+            } catch {
+                diagnostics.append("\(provider.name): ошибка — \(error.localizedDescription)")
             }
         }
         var seen = Set<String>()
         let unique = all.filter { seen.insert($0.magnet).inserted }
-        return Self.rank(unique)
+        return SearchOutcome(results: Self.rank(unique), diagnostics: diagnostics)
     }
 
     static func rank(_ results: [MagnetResult]) -> [MagnetResult] {
