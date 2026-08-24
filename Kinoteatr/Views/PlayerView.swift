@@ -48,9 +48,8 @@ struct PlayerView: View {
     }
 
     private var videoPlayer: some View {
-        VideoPlayer(player: playerService.player)
+        CustomPlayerView(player: playerService.player)
             .ignoresSafeArea()
-            .onTapGesture(count: 1) {}
     }
 
     private func bufferingOverlay(progress: Double) -> some View {
