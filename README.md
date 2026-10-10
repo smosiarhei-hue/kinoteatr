@@ -40,3 +40,16 @@ project.yml       — манифест XcodeGen
 - После изменений нужно пересобрать IPA через GitHub Actions или Xcode на macOS: исходный dist/*.ipa уже собран из старого кода.
 - Иконка хранится в полном наборе iOS-размеров в Kinoteatr/Support/Assets.xcassets/AppIcon.appiconset, поэтому при новой сборке GBox должен показывать корректную иконку.
 
+## Сборка и подпись (GitHub Actions)
+Workflow `.github/workflows/build.yml` запускается на пуше в `master`, на теге `v*` и вручную (`workflow_dispatch`).
+
+Порядок шагов:
+1. Прогоняются тесты скриптов доставки: `python3 -m unittest discover -s .github/scripts`.
+2. Версия считается из `github.run_number` и подставляется в `project.yml` и `Kinoteatr/Support/Info.plist`.
+3. Секреты `APPLE_CERT_P12`, `APPLE_CERT_PASSWORD`, `APPLE_PROFILE` импортируются в отдельный keychain, из provisioning profile извлекаются UUID / Team ID / Bundle ID, а `patch_project_signing.py` приводит `project.yml` к этим значениям. Если секретов нет — сборка идёт unsigned и шаги подписи пропускаются.
+4. `xcodebuild` собирает приложение, затем `codesign` переподписывает бандл с entitlements из профиля, и `codesign --verify` проверяет подпись.
+5. Готовый IPA выкладывается в OTA: `deploy_ota_pages.py` кладёт `Kinoteatr.ipa` и `manifest.plist` в ветку `gh-pages` (сайт https://smosiarhei-hue.github.io/kinoteatr/).
+6. При наличии `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` IPA отправляется в Telegram-чат (`send_ipa_telegram.py`). Недоставка не роняет сборку.
+
+Скрипты в `.github/scripts/` покрыты тестами: `patch_project_signing`, `send_ipa_telegram`, `deploy_ota_pages`.
+
