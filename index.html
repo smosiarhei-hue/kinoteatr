@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Кинотеатр — Установка на iPhone</title>
+  <style>
+    :root {
+      --bg: #0b0708;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent: #FF9F0A;
+      --accent-glow: rgba(255, 159, 10, 0.4);
+      --text: #F5F5F7;
+      --text-secondary: #86868B;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      background: radial-gradient(circle at 50% 0%, #2a1a10 0%, var(--bg) 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 440px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: 32px;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    }
+    .app-icon {
+      width: 108px;
+      height: 108px;
+      border-radius: 24px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #FF2D55 0%, #FF9F0A 50%, #FFD60A 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 32px rgba(255, 159, 10, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-icon svg {
+      width: 56px;
+      height: 56px;
+      fill: #ffffff;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 159, 10, 0.15);
+      border: 1px solid rgba(255, 159, 10, 0.3);
+      color: #FFB340;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 24px;
+    }
+    .badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #30D158;
+      box-shadow: 0 0 10px #30D158;
+    }
+    .info-list {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 28px;
+      text-align: left;
+      font-size: 14px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      color: var(--text-secondary);
+    }
+    .info-val {
+      font-weight: 600;
+      color: #F5F5F7;
+    }
+    .btn-install {
+      display: block;
+      width: 100%;
+      background: linear-gradient(180deg, #FF9F0A 0%, #E07B00 100%);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 16px 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px var(--accent-glow);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-install:active {
+      transform: scale(0.98);
+      filter: brightness(0.9);
+    }
+    .tip {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .fallback-link {
+      margin-top: 14px;
+      display: inline-block;
+      font-size: 13px;
+      color: #FFB340;
+      text-decoration: none;
+    }
+    .fallback-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="app-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+      </svg>
+    </div>
+    <h1>Кинотеатр</h1>
+    <div class="badge">
+      <span class="dot"></span>
+      Доступно обновление
+    </div>
+
+    <div class="info-list">
+      <div class="info-row">
+        <span class="info-label">Подпись</span>
+        <span class="info-val">iPhone Distribution (до 05.12.2026)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Готовность</span>
+        <span class="info-val">Любой iPhone (UDID прописан)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Обновление</span>
+        <span class="info-val">Автоматическое (Over-The-Air)</span>
+      </div>
+    </div>
+
+    <a id="installBtn" href="itms-services://?action=download-manifest&amp;url=https://smosiarhei-hue.github.io/kinoteatr/manifest.plist" class="btn-install">
+      Установить обновление на iPhone
+    </a>
+
+    <p class="tip">
+      Открывай только в Safari — в Chrome или другом браузере кнопка установки iOS:<br>
+      <b>не сработает.</b><br>
+      Если появится ошибка, нажми <b>«Установить»</b> ещё раз и подтверди установку в системном меню.
+    </p>
+
+    <a href="Kinoteatr.ipa" class="fallback-link">Скачать файл .ipa</a>
+  </div>
+</body>
+</html>
